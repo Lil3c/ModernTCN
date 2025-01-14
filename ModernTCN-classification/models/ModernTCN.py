@@ -59,8 +59,8 @@ class ReparamLargeKernelConv(nn.Module):
                  small_kernel,
                  small_kernel_merged=False, nvars=7):
         super(ReparamLargeKernelConv, self).__init__()
-        self.kernel_size = kernel_size
-        self.small_kernel = small_kernel
+        self.kernel_size = kernel_size  # 大kernel_size
+        self.small_kernel = small_kernel  # 小kernel_size
         # We assume the conv does not change the feature map size, so padding = k//2. Otherwise, you may configure padding as you wish, and change the padding of small_conv accordingly.
         padding = kernel_size // 2
         if small_kernel_merged:
