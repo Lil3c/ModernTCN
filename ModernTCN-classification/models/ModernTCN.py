@@ -42,15 +42,15 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups, dil
 
 def fuse_bn(conv, bn):
 
-    kernel = conv.weight
-    running_mean = bn.running_mean
-    running_var = bn.running_var
-    gamma = bn.weight
-    beta = bn.bias
-    eps = bn.eps
-    std = (running_var + eps).sqrt()
-    t = (gamma / std).reshape(-1, 1, 1)
-    return kernel * t, beta - running_mean * gamma / std
+    kernel = conv.weight  # (out_channel, in_channel, kernel_size)
+    running_mean = bn.running_mean  # (out_channel,)
+    running_var = bn.running_var  # (out_channel,)
+    gamma = bn.weight  # (out_channel,)
+    beta = bn.bias  # (out_channel,)
+    eps = bn.eps  # 1e-5
+    std = (running_var + eps).sqrt()  # (out_channel,)
+    t = (gamma / std).reshape(-1, 1, 1)  # (out_channel, 1, 1)
+    return kernel * t, beta - running_mean * gamma / std  # 卷积核逐通道缩放， 使用BN的公式计算融合后的偏置
 
 class ReparamLargeKernelConv(nn.Module):
 
@@ -88,7 +88,7 @@ class ReparamLargeKernelConv(nn.Module):
 
     def PaddingTwoEdge1d(self,x,pad_length_left,pad_length_right,pad_values=0):
 
-        D_out,D_in,ks=x.shape
+        D_out,D_in,ks=x.shape  # ks：kernel_size
         if pad_values ==0:
             pad_left = torch.zeros(D_out,D_in,pad_length_left)
             pad_right = torch.zeros(D_out,D_in,pad_length_right)
