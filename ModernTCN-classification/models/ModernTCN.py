@@ -63,10 +63,10 @@ class ReparamLargeKernelConv(nn.Module):
         self.small_kernel = small_kernel  # 小kernel_size
         # We assume the conv does not change the feature map size, so padding = k//2. Otherwise, you may configure padding as you wish, and change the padding of small_conv accordingly.
         padding = kernel_size // 2
-        if small_kernel_merged:
+        if small_kernel_merged:  # 表示小卷积核已经融合
             self.lkb_reparam = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
                                          stride=stride, padding=padding, dilation=1, groups=groups, bias=True)
-        else:
+        else:  # 表示小卷积核未融合，初始化主要的大卷积核，辅助小卷积核（可选）
             self.lkb_origin = conv_bn(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
                                         stride=stride, padding=padding, dilation=1, groups=groups,bias=False)
             if small_kernel is not None:
@@ -78,10 +78,10 @@ class ReparamLargeKernelConv(nn.Module):
 
     def forward(self, inputs):
 
-        if hasattr(self, 'lkb_reparam'):
-            out = self.lkb_reparam(inputs)
+        if hasattr(self, 'lkb_reparam'):  # 检查self对象是否具有lkb_reparam这个属性
+            out = self.lkb_reparam(inputs)  # 如果有，则直接用融合后的卷积核
         else:
-            out = self.lkb_origin(inputs)
+            out = self.lkb_origin(inputs)  # 如果没有，则使用大卷积核，加上小卷积核的输出
             if hasattr(self, 'small_conv'):
                 out += self.small_conv(inputs)
         return out
