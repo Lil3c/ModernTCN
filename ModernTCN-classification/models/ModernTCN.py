@@ -65,10 +65,10 @@ class ReparamLargeKernelConv(nn.Module):
         padding = kernel_size // 2
         if small_kernel_merged:  # 表示小卷积核已经融合
             self.lkb_reparam = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
-                                         stride=stride, padding=padding, dilation=1, groups=groups, bias=True)
+                                         stride=stride, padding=padding, dilation=1, groups=groups, bias=True)  # 为什么这里有偏置
         else:  # 表示小卷积核未融合，初始化主要的大卷积核，辅助小卷积核（可选）
             self.lkb_origin = conv_bn(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
-                                        stride=stride, padding=padding, dilation=1, groups=groups,bias=False)
+                                        stride=stride, padding=padding, dilation=1, groups=groups,bias=False)  # 为什么这里没有偏置
             if small_kernel is not None:
                 assert small_kernel <= kernel_size, 'The kernel size for re-param cannot be larger than the large kernel!'
                 self.small_conv = conv_bn(in_channels=in_channels, out_channels=out_channels,
@@ -100,7 +100,7 @@ class ReparamLargeKernelConv(nn.Module):
         return x
 
     def get_equivalent_kernel_bias(self):
-        eq_k, eq_b = fuse_bn(self.lkb_origin.conv, self.lkb_origin.bn)
+        eq_k, eq_b = fuse_bn(self.lkb_origin.conv, self.lkb_origin.bn)  # 等效kernel，等效bias
         if hasattr(self, 'small_conv'):
             small_k, small_b = fuse_bn(self.small_conv.conv, self.small_conv.bn)
             eq_b += small_b
@@ -115,10 +115,10 @@ class ReparamLargeKernelConv(nn.Module):
                                      kernel_size=self.lkb_origin.conv.kernel_size, stride=self.lkb_origin.conv.stride,
                                      padding=self.lkb_origin.conv.padding, dilation=self.lkb_origin.conv.dilation,
                                      groups=self.lkb_origin.conv.groups, bias=True)
-        self.lkb_reparam.weight.data = eq_k
-        self.lkb_reparam.bias.data = eq_b
-        self.__delattr__('lkb_origin')
-        if hasattr(self, 'small_conv'):
+        self.lkb_reparam.weight.data = eq_k  # 将等效kernel赋值给新的卷积层
+        self.lkb_reparam.bias.data = eq_b  # 将等效bias赋值给新的卷积层，偏置完全来自bn层
+        self.__delattr__('lkb_origin')  # __delattr__ 是 Python 类的内置方法，用于删除实例对象的属性
+        if hasattr(self, 'small_conv'):  # 删除原始的大卷积核以及小卷积核实例
             self.__delattr__('small_conv')
 
 class Block(nn.Module):
