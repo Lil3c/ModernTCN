@@ -277,7 +277,7 @@ class ModernTCN(nn.Module):
 
         B,M,L=x.shape
 
-        x = x.unsqueeze(-2)
+        x = x.unsqueeze(-2)  # (B, M, D, N), M为序列数量(通道数)，N为时间长度，D为特征维度，为1
 
         for i in range(self.num_stage):
             B, M, D, N = x.shape
@@ -289,9 +289,9 @@ class ModernTCN(nn.Module):
                     pad = x[:,:,-1:].repeat(1,1,pad_len)
                     x = torch.cat([x,pad],dim=-1)
             else:
-                if N % self.downsample_ratio != 0:
+                if N % self.downsample_ratio != 0:  # 确保时间序列长度的是下采样率的整数倍
                     pad_len = self.downsample_ratio - (N % self.downsample_ratio)
-                    x = torch.cat([x, x[:, :, -pad_len:]],dim=-1)
+                    x = torch.cat([x, x[:, :, -pad_len:]],dim=-1)  # 用数据本身的最后部分来进行cat，有点奇怪
             x = self.downsample_layers[i](x)
             _, D_, N_ = x.shape
             x = x.reshape(B, M, D_, N_)
