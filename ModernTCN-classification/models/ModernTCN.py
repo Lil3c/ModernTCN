@@ -62,7 +62,7 @@ class ReparamLargeKernelConv(nn.Module):
         self.kernel_size = kernel_size  # 大kernel_size
         self.small_kernel = small_kernel  # 小kernel_size
         # We assume the conv does not change the feature map size, so padding = k//2. Otherwise, you may configure padding as you wish, and change the padding of small_conv accordingly.
-        padding = kernel_size // 2
+        padding = kernel_size // 2  # 默认设置卷积核都是奇数
         if small_kernel_merged:  # 表示小卷积核已经融合
             self.lkb_reparam = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
                                          stride=stride, padding=padding, dilation=1, groups=groups, bias=True)  # 为什么这里有偏置
