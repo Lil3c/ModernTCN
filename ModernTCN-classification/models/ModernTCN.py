@@ -40,7 +40,7 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups, dil
     result.add_module('bn', get_bn(out_channels))
     return result
 
-def fuse_bn(conv, bn):
+def fuse_bn(conv, bn):  # 融合conv和bn，但似乎有点问题，导致不能正确融合
 
     kernel = conv.weight  # (out_channel, in_channel, kernel_size)
     running_mean = bn.running_mean  # (out_channel,)
@@ -103,12 +103,12 @@ class ReparamLargeKernelConv(nn.Module):
         eq_k, eq_b = fuse_bn(self.lkb_origin.conv, self.lkb_origin.bn)  # 等效kernel，等效bias
         if hasattr(self, 'small_conv'):
             small_k, small_b = fuse_bn(self.small_conv.conv, self.small_conv.bn)
-            eq_b += small_b
+            eq_b += small_b  # 融合两个偏置
             eq_k += self.PaddingTwoEdge1d(small_k, (self.kernel_size - self.small_kernel) // 2,
-                                          (self.kernel_size - self.small_kernel) // 2, 0)
+                                          (self.kernel_size - self.small_kernel) // 2, 0)  # 融合两个卷积核
         return eq_k, eq_b
 
-    def merge_kernel(self):
+    def merge_kernel(self):  # 尝试了一下，融合错误，融合前后输出差别很大
         eq_k, eq_b = self.get_equivalent_kernel_bias()
         self.lkb_reparam = nn.Conv1d(in_channels=self.lkb_origin.conv.in_channels,
                                      out_channels=self.lkb_origin.conv.out_channels,
@@ -228,7 +228,7 @@ class ModernTCN(nn.Module):
             for i in range(self.num_stage - 1):
                 downsample_layer = nn.Sequential(
                     nn.BatchNorm1d(dims[i]),
-                    nn.Conv1d(dims[i], dims[i + 1], kernel_size=downsample_ratio, stride=downsample_ratio),
+                    nn.Conv1d(dims[i], dims[i + 1], kernel_size=downsample_ratio, stride=downsample_ratio),  # 下采样率设置为偶数
                 )
                 self.downsample_layers.append(downsample_layer)
 
@@ -286,12 +286,12 @@ class ModernTCN(nn.Module):
                 if self.patch_size != self.patch_stride:
                     # stem layer padding
                     pad_len = self.patch_size - self.patch_stride
-                    pad = x[:,:,-1:].repeat(1,1,pad_len)
+                    pad = x[:,:,-1:].repeat(1,1,pad_len)  # 重复最后一个时间步的数据
                     x = torch.cat([x,pad],dim=-1)
             else:
                 if N % self.downsample_ratio != 0:  # 确保时间序列长度的是下采样率的整数倍
                     pad_len = self.downsample_ratio - (N % self.downsample_ratio)
-                    x = torch.cat([x, x[:, :, -pad_len:]],dim=-1)  # 用数据本身的最后部分来进行cat，有点奇怪
+                    x = torch.cat([x, x[:, :, -pad_len:]],dim=-1)  # 用数据本身的最后部分来进行cat
             x = self.downsample_layers[i](x)
             _, D_, N_ = x.shape
             x = x.reshape(B, M, D_, N_)
