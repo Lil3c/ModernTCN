@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class RevIN(nn.Module):
+class RevIN(nn.Module):  # 归一化和反归一化模块，可带有可学习参数
     def __init__(self, num_features: int, eps=1e-5, affine=True, subtract_last=False):
         """
         :param num_features: the number of features or channels
