@@ -30,7 +30,7 @@ class RevIN(nn.Module):  # 归一化和反归一化模块，可带有可学习�
         self.affine_weight = nn.Parameter(torch.ones(self.num_features))
         self.affine_bias = nn.Parameter(torch.zeros(self.num_features))
 
-    def _get_statistics(self, x):
+    def _get_statistics(self, x):  # 是计算每个独立样本特征维度的均值和标准差
         dim2reduce = tuple(range(1, x.ndim-1))
         if self.subtract_last:
             self.last = x[:,-1,:].unsqueeze(1)
