@@ -32,7 +32,7 @@ def divide_no_nan(a, b):
     return result
 
 
-class mape_loss(nn.Module):
+class mape_loss(nn.Module):  # 衡量预测值与真实值的相对误差指标，计算每个预测值与真实值的绝对百分比误差，然后取平均值
     def __init__(self):
         super(mape_loss, self).__init__()
 
@@ -50,7 +50,7 @@ class mape_loss(nn.Module):
         return t.mean(t.abs((forecast - target) * weights))
 
 
-class smape_loss(nn.Module):
+class smape_loss(nn.Module):  # 改进的mape，解决mape处理零值时的缺陷。
     def __init__(self):
         super(smape_loss, self).__init__()
 
@@ -68,7 +68,7 @@ class smape_loss(nn.Module):
                                           t.abs(forecast.data) + t.abs(target.data)) * mask)
 
 
-class mase_loss(nn.Module):
+class mase_loss(nn.Module):  # 适用于时间序列预测，通过与基准模型进行比较提供相对表现评估
     def __init__(self):
         super(mase_loss, self).__init__()
 
